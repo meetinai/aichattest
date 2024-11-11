@@ -1,9 +1,9 @@
 # Use an official Python base image
 FROM python:3.11-slim
 
-# Create a non-root user with a specific UID and GID (e.g., 1001 for user and group)
-RUN groupadd -g 1001 appuser && \
-    useradd -u 1001 -g appuser -m appuser
+# Create a non-root user with a UID between 10000 and 20000
+RUN groupadd -g 10001 appuser && \
+    useradd -u 10001 -g appuser -m appuser
 
 # Set the working directory inside the container
 WORKDIR /app
