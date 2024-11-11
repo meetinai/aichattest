@@ -1,32 +1,39 @@
-# Stage 1: Build stage
-FROM python:3.11-slim as build-env
+# Copyright notice and license can be added here if needed
 
-# Set up application directory and install dependencies
-WORKDIR /app
-COPY requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
+# Use Python 3.11 as the base image for building
+FROM python:3.11-slim AS build
 
-# Create a new user with UID between 10000 and 20000
-RUN groupadd -g 10001 appuser && \
-    useradd -u 10001 -g appuser -m appuser
-
-# Copy the source code into the container
-COPY . .
-
-# Stage 2: Final runtime stage
-FROM python:3.11-slim
-
-# Set up working directory
+# Set working directory
 WORKDIR /app
 
-# Copy the installed dependencies from the build stage
-COPY --from=build-env /app /app
+# Create a virtual environment and activate it
+RUN python -m venv /app/venv
+ENV PATH="/app/venv/bin:$PATH"
 
-# Expose port 8080
+# Install open-webui
+RUN pip install --no-cache-dir open-webui
+
+# Create a non-privileged user for running the application
+RUN adduser \
+    --disabled-password \
+    --gecos "" \
+    --home "/nonexistent" \
+    --shell "/sbin/nologin" \
+    --no-create-home \
+    --uid 10014 \
+    "choreo"
+
+# Set environment variables
+ENV ENABLE_PERMISSIONS=TRUE
+ENV DEBUG_PERMISSIONS=TRUE
+ENV USER_APP=10014
+ENV GROUP_APP=10014
+
+# Switch to non-root user
+USER 10014
+
+# Expose the default port (adjust if needed)
 EXPOSE 8080
 
-# Use a non-root user with UID between 10000 and 20000
-USER appuser:appuser
-
-# Command to start Open WebUI server
+# Command to run the application
 CMD ["open-webui", "serve"]
