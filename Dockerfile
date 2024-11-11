@@ -4,6 +4,18 @@ FROM python:3.11-slim-bullseye AS builder
 # Set working directory
 WORKDIR /app
 
+# Install dependencies for running Trivy and scanning the base image
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Trivy (vulnerability scanner)
+RUN curl -sfL https://github.com/aquasecurity/trivy/releases/download/v0.42.0/trivy_0.42.0_Linux-64bit.tar.gz | tar xz -C /usr/local/bin
+
+# Scan the base image for vulnerabilities and print the results in logs
+RUN trivy image python:3.11-slim-bullseye || true
+
 # Update system packages and install security updates
 RUN apt-get update && \
     apt-get upgrade -y && \
