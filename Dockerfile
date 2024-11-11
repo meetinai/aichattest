@@ -1,21 +1,32 @@
-# Use an official Python base image
-FROM python:3.11-slim
+# Stage 1: Build stage
+FROM python:3.11-slim as build-env
 
-# Create a non-root user with a UID between 10000 and 20000
+# Set up application directory and install dependencies
+WORKDIR /app
+COPY requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Create a new user with UID between 10000 and 20000
 RUN groupadd -g 10001 appuser && \
     useradd -u 10001 -g appuser -m appuser
 
-# Set the working directory inside the container
+# Copy the source code into the container
+COPY . .
+
+# Stage 2: Final runtime stage
+FROM python:3.11-slim
+
+# Set up working directory
 WORKDIR /app
 
-# Install Open WebUI using pip
-RUN pip install open-webui
+# Copy the installed dependencies from the build stage
+COPY --from=build-env /app /app
 
-# Expose the port where Open WebUI will be accessible
+# Expose port 8080
 EXPOSE 8080
 
-# Switch to the non-root user
-USER appuser
+# Use a non-root user with UID between 10000 and 20000
+USER appuser:appuser
 
-# Command to run Open WebUI server
+# Command to start Open WebUI server
 CMD ["open-webui", "serve"]
